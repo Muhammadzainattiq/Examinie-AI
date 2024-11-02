@@ -1,0 +1,15 @@
+version: '3.8'
+name: examinieai
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ExaminieAI
+    volumes:
+      - .:/code  # Sync local development directory with the container
+    ports:
+      - "8000:8000"  # Expose container port 8000 to host port 8000  
+    env_file:
+      - .env
+

@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "examinieai"
+version = "0.1.0"
+description = ""
+authors = ["Muhammad Zain Attiq <zainatteeq@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.4"
+sqlmodel = "^0.0.22"
+pytest = "^8.3.3"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+bcrypt = "^4.2.0"
+psycopg2-binary = "^2.9.10"
+langchain = "^0.3.7"
+langgraph = "^0.2.44"
+langchain-core = "^0.3.15"
+langchain-community = "^0.3.5"
+langchain-openai = "^0.2.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
