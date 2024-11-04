@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "examinieai"
+name = "app"
 version = "0.1.0"
 description = ""
 authors = ["Muhammad Zain Attiq <zainatteeq@gmail.com>"]
