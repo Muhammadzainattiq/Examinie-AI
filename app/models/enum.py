@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class RoleEnum(str, Enum):
+class Role(str, Enum):
     STUDENT = "student"
     TEACHER = "teacher"
 
@@ -40,6 +40,7 @@ class QuestionType(str, Enum):
     CASE_STUDY = "Case Studies"
     TRUE_FALSE = "True/False"
     FILL_IN_THE_BLANK = "Fill in the Blanks"
+    YOUTUBE_VIDEO = "Youtube video"
 
 class CurrentLevelOfEducation(Enum):
     KINDERGARTEN = "Kindergarten"
@@ -71,6 +72,27 @@ class LatestGrade(Enum):
     FAIL = "F"        # Fail grade
     OTHER = "Other"   # For any other grading system
 
+class CareerPath(str, Enum):
+    ENGINEERING = "Engineering"
+    MEDICINE = "Medicine"
+    LAW = "Law"
+    ART = "Art"
+    BUSINESS = "Business"
+    TECHNOLOGY = "Technology"
+    SCIENCE = "Science"
+    EDUCATION = "Education"
+    FINANCE = "Finance"
+    HOSPITALITY = "Hospitality"
+    HEALTHCARE = "Healthcare"
+    ENVIRONMENTAL_SCIENCE = "Environmental Science"
+    MEDIA_AND_COMMUNICATIONS = "Media and Communications"
+    PSYCHOLOGY = "Psychology"
+    SOCIAL_WORK = "Social Work"
+    ENTREPRENEURSHIP = "Entrepreneurship"
+    SPORTS = "Sports"
+    GOVERNMENT_AND_POLITICS = "Government and Politics"
+    OTHER = "Other"
+
 class FavoriteSubject(Enum):
     MATHEMATICS = "Mathematics"
     SCIENCE = "Science"
@@ -93,5 +115,6 @@ class FileType(str, Enum):
     XLSX = "XLSX"
     PPTX = "PPTX"
     IMAGE = "Image"
+    Youtube_Video = "Youtube_Video"
     ARTICLE = "Article"
     EXAM = "Exam"
