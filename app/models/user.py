@@ -5,6 +5,7 @@ import uuid
 from sqlmodel import SQLModel, Field, Relationship
 from app.models.enum import (
     CareerPath,
+    Country,
     Role,
     CurrentLevelOfEducation,
     DecisionMakingApproach,
@@ -15,8 +16,9 @@ from app.models.enum import (
     SocialInteractionStyle
 )
 
+
 if TYPE_CHECKING:
-    from app.models.exam import Exam
+    from app.models.exam import Exam, Result
 
 class BaseModel(SQLModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -35,10 +37,11 @@ class User(BaseModel, table=True):
     teacher_profile: Optional["TeacherProfile"] = Relationship(back_populates="user")
 
 
-class StudentProfile(BaseModel, table=True):
-    user_id: uuid.UUID = Field(foreign_key="user.id")  # Foreign key reference
+class StudentProfile(SQLModel, table=True):
+    id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)  # Foreign key reference
     age: Optional[int]
     gender: Optional[str]
+    country: Optional[Country]
     social_interaction_style: Optional[SocialInteractionStyle]
     decision_making_approach: Optional[DecisionMakingApproach]
     current_level_of_education: Optional[CurrentLevelOfEducation]
@@ -50,6 +53,8 @@ class StudentProfile(BaseModel, table=True):
     short_term_academic_goals: Optional[str]
     long_term_academic_goals: Optional[str]
     interested_career_paths: Optional[CareerPath] 
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
 
     # Define relationships
     user: Optional["User"] = Relationship(back_populates="student_profile")  # Ensure this line is present
@@ -65,15 +70,19 @@ class StudentProgress(BaseModel, table=True):
     exams_passed: int = Field(default=0)
     exams_failed: int = Field(default=0)
     total_points: int = Field(default=0)
-    overall_grade: Optional[str]
+    overall_grade: Optional[LatestGrade]
     overall_percentage: Optional[float]
-    time_spent: int = Field(default=0)
 
+
+    # Relationships
     student_profile: Optional["StudentProfile"] = Relationship(back_populates="progress_records")
+    exam_results: List["Result"] = Relationship(back_populates="student_progress") 
 
 
-class TeacherProfile(BaseModel, table=True):
-    user_id: uuid.UUID = Field(foreign_key="user.id")  # Foreign key reference
+class TeacherProfile(SQLModel, table=True):
+    id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)  # Foreign key reference
     created_exams: List["Exam"] = Relationship(back_populates="teacher_creator")
-    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+
     user: Optional["User"] = Relationship(back_populates="teacher_profile")
