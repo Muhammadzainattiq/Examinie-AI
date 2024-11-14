@@ -72,6 +72,46 @@ class LatestGrade(Enum):
     FAIL = "F"        # Fail grade
     OTHER = "Other"   # For any other grading system
 
+from enum import Enum
+
+class Country(Enum):
+    UNITED_STATES = "United States"
+    CANADA = "Canada"
+    UNITED_KINGDOM = "United Kingdom"
+    AUSTRALIA = "Australia"
+    GERMANY = "Germany"
+    FRANCE = "France"
+    ITALY = "Italy"
+    SPAIN = "Spain"
+    BRAZIL = "Brazil"
+    MEXICO = "Mexico"
+    JAPAN = "Japan"
+    CHINA = "China"
+    INDIA = "India"
+    PAKISTAN = "Pakistan"
+    RUSSIA = "Russia"
+    SOUTH_AFRICA = "South Africa"
+    NIGERIA = "Nigeria"
+    EGYPT = "Egypt"
+    TURKEY = "Turkey"
+    SAUDI_ARABIA = "Saudi Arabia"
+    ARGENTINA = "Argentina"
+    SOUTH_KOREA = "South Korea"
+    NEW_ZEALAND = "New Zealand"
+    SWEDEN = "Sweden"
+    NORWAY = "Norway"
+    DENMARK = "Denmark"
+    NETHERLANDS = "Netherlands"
+    BELGIUM = "Belgium"
+    SWITZERLAND = "Switzerland"
+    UAE = "United Arab Emirates"
+    MALAYSIA = "Malaysia"
+    SINGAPORE = "Singapore"
+    INDONESIA = "Indonesia"
+    PHILIPPINES = "Philippines"
+    THAILAND = "Thailand"
+
+
 class CareerPath(str, Enum):
     ENGINEERING = "Engineering"
     MEDICINE = "Medicine"

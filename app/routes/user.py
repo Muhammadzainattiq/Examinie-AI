@@ -1,8 +1,9 @@
 from typing import List
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 from app.schemas.user import UserCreate, UserResponse
-from app.models.user import User
+from app.models.user import StudentProfile, TeacherProfile, User
 from app.utils.auth import get_password_hash, get_current_user
 from app.utils.db import get_session
 from sqlmodel import select
@@ -56,26 +57,3 @@ def delete_user(session: Session = Depends(get_session), current_user: User = De
 @user_router.get("/get_current_user_details/", response_model=UserResponse)
 def get_user(current_user: User = Depends(get_current_user)):
     return current_user
-
-
-@user_router.get("/get_current_user_full_details/", response_model=UserResponse)
-def get_current_user_full_details(
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
-):
-    # Load the current user along with profile data (either Student or Teacher)
-    statement = (
-        select(User)
-        .options(
-            selectinload(User.student_profile),
-            selectinload(User.teacher_profile)
-        )
-        .where(User.id == current_user.id)
-    )
-    user = session.exec(statement).first()
-
-    # Check if the user exists
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user

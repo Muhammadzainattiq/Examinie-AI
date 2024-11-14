@@ -1,15 +1,15 @@
 from typing import Optional
 from uuid import UUID
-from app.schemas.base import BaseSchema
+from sqlmodel import SQLModel
 
-class ContentCreate(BaseSchema):
+class ContentCreate(SQLModel):
     title: str
     description: Optional[str]
     file_type: str  # or use FileType Enum
     file_url: str
     exam_id: Optional[UUID]  # Change to UUID
 
-class ContentResponse(BaseSchema):
+class ContentResponse(SQLModel):
     title: str
     description: Optional[str]
     file_type: str

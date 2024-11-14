@@ -1,10 +1,11 @@
 # app/schemas/student.py
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional, List
 from app.models.enum import (
     CareerPath,
+    Country,
     SocialInteractionStyle,
     DecisionMakingApproach,
     CurrentLevelOfEducation,
@@ -17,6 +18,7 @@ from app.models.enum import (
 class StudentProfileCreate(BaseModel):
     age: Optional[int]
     gender: Optional[str]
+    country: Optional[Country]
     social_interaction_style: Optional[SocialInteractionStyle]
     decision_making_approach: Optional[DecisionMakingApproach]
     current_level_of_education: Optional[CurrentLevelOfEducation]
@@ -31,10 +33,25 @@ class StudentProfileCreate(BaseModel):
 
 
 class StudentProfileResponse(StudentProfileCreate):
-    user_id: UUID
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime]
+
+    class Config:
+        orm_mode = True
+
+
+class StudentProgressResponse(BaseModel):
+    id: UUID
+    profile_id: UUID
+    date_recorded: date
+    last_exam_score: Optional[float] = None
+    total_exams_taken: int
+    exams_passed: int
+    exams_failed: int
+    total_points: int
+    overall_grade: Optional[LatestGrade] = None
+    overall_percentage: Optional[float] = None
 
     class Config:
         orm_mode = True

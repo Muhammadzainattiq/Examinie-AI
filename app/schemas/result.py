@@ -15,7 +15,11 @@ class ResultCreate(BaseModel):
 class ResultResponse(BaseModel):
     id: UUID
     exam_attempt_id: UUID
+<<<<<<< HEAD
     student_id: Optional[UUID]
+=======
+    student_progress_id: Optional[UUID]
+>>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     exam_title: Optional[str]  # New field for response
     total_marks: Optional[int]
     obtained_marks: int

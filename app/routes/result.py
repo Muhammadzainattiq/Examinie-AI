@@ -18,10 +18,15 @@ async def create_result(
     exam_attempt_id: UUID,
     result_data: ResultCreate,
     session: Session = Depends(get_session),
+<<<<<<< HEAD
     current_user: User = Depends(get_current_user)
 ):
     if result_data.obtained_marks > result_data.total_marks:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Obtained marks cannot be greater than total marks.")
+=======
+    current_user = Depends(get_current_user)
+):
+>>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     # Retrieve the student's profile
     profile = session.exec(select(StudentProfile).where(StudentProfile.id == current_user.id)).first()
     if not profile:
@@ -40,7 +45,11 @@ async def create_result(
     latest_progress = session.exec(
         select(StudentProgress)
         .where(StudentProgress.profile_id == profile.id)
+<<<<<<< HEAD
         .order_by(StudentProgress.created_at.desc())
+=======
+        .order_by(StudentProgress.date_recorded.desc())
+>>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     ).first()
 
     # Initialize fields for the new StudentProgress record based on the latest progress
@@ -82,7 +91,11 @@ async def create_result(
     # Create the result entry and link it to the new progress record
     new_result = Result(
         exam_attempt_id=exam_attempt.id,
+<<<<<<< HEAD
         student_id=current_user.id,
+=======
+        student_progress_id=progress_record.id,
+>>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
         exam_title=exam.title,
         total_marks=result_data.total_marks,
         obtained_marks=result_data.obtained_marks,
@@ -95,7 +108,11 @@ async def create_result(
     session.refresh(new_result)
 
     # Calculate overall grade and percentage based on all results for the student
+<<<<<<< HEAD
     all_results = session.exec(select(Result).where(Result.student_id == current_user.id)).all()
+=======
+    all_results = session.exec(select(Result).where(Result.student_progress_id == progress_record.id)).all()
+>>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     if all_results:
         total_obtained = sum(result.obtained_marks for result in all_results)
         total_max = sum(result.total_marks for result in all_results if result.total_marks)

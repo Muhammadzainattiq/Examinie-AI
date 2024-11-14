@@ -1,12 +1,12 @@
-# exam.py
+# exam_models.py
 from datetime import datetime
 from uuid import UUID
 import uuid
 from sqlmodel import SQLModel, Field, Relationship
-from typing import List, Optional
+from typing import List, Optional, Union
+from app.models.content import Content
 from app.models.enum import DifficultyLevel, QuestionType
-from app.models.user  import StudentProfile, TeacherProfile
-
+from app.models.user import StudentProfile, StudentProgress, TeacherProfile
 
 class BaseModel(SQLModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -31,6 +31,7 @@ class Exam(BaseModel, table=True):
     teacher_creator: Optional["TeacherProfile"] = Relationship(back_populates="created_exams")
     questions: List["Question"] = Relationship(back_populates="exam")
     attempts: List["ExamAttempt"] = Relationship(back_populates="exam")
+    contents: List["Content"] = Relationship(back_populates="exam")
 
 class ExamAttempt(BaseModel, table=True):
     exam_id: UUID = Field(foreign_key="exam.id")  # Foreign key reference
@@ -46,33 +47,42 @@ class Question(BaseModel, table=True):
     exam_id: UUID = Field(foreign_key="exam.id")  # Foreign key reference
     content: str
     type: QuestionType
-    # choices: Optional[List[str]] = Field(default=None)  # Use JSON for choice storage
     correct_answer: Optional[str] = None
     marks: int
 
+    # For MCQ questions, store choices; for others, choices are not needed
+    choices: Optional[List["Choice"]] = Relationship(back_populates="question")
+
+    # Relationships
     exam: Optional["Exam"] = Relationship(back_populates="questions")
+
+class Choice(BaseModel, table=True):
+    question_id: UUID = Field(foreign_key="question.id")  # Foreign key reference
+    text: str
+    is_correct: bool = False
+
+    # Relationship
+    question: Optional["Question"] = Relationship(back_populates="choices")
 
 class Answer(BaseModel, table=True):
     attempt_id: UUID = Field(foreign_key="examattempt.id")  # Foreign key reference
     question_id: UUID = Field(foreign_key="question.id")  # Foreign key reference
     response: str
-    is_correct: bool = False
+    is_correct: Optional[bool] = False
 
     attempt: Optional["ExamAttempt"] = Relationship(back_populates="answers")
     question: Optional["Question"] = Relationship()
 
 class Result(BaseModel, table=True):
     exam_attempt_id: UUID = Field(foreign_key="examattempt.id")  # Foreign key reference
+    student_progress_id: Optional[uuid.UUID] = Field(foreign_key="studentprogress.id")  # Link to StudentProgress
+    exam_title: Optional[str] = None  # Store exam title for reference
     total_marks: Optional[int] = None
     obtained_marks: int
     grade: Optional[str] = None
     percentage: Optional[float] = None
     feedback: Optional[str] = None
 
+    # Relationships
     exam_attempt: Optional["ExamAttempt"] = Relationship()
-
-
-
-# ----------------------------------------------------------------
-#to avoid circular imports defining types here:
-
+    student_progress: Optional["StudentProgress"] = Relationship(back_populates="exam_results")
