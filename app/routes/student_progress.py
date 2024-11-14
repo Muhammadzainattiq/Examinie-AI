@@ -50,10 +50,6 @@ def create_progress_record(
 def update_progress(
     last_exam_score: float,
     passed: bool,
-<<<<<<< HEAD
-=======
-    time_spent: int,
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     session: Session = Depends(get_session),
     current_user = Depends(get_current_user)
 ):
@@ -64,11 +60,7 @@ def update_progress(
 
     # Retrieve the latest progress record
     last_progress_record = session.exec(
-<<<<<<< HEAD
         select(StudentProgress).where(StudentProgress.profile_id == profile.id).order_by(StudentProgress.created_at.desc())
-=======
-        select(StudentProgress).where(StudentProgress.profile_id == profile.id).order_by(StudentProgress.date_recorded.desc())
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     ).first()
     if not last_progress_record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Progress record not found.")
@@ -84,10 +76,6 @@ def update_progress(
         total_points=last_progress_record.total_points + int(last_exam_score),
         overall_grade=last_progress_record.overall_grade,  # Initial value, will update below
         overall_percentage=last_progress_record.overall_percentage,  # Initial value, will update below
-<<<<<<< HEAD
-=======
-        time_spent=last_progress_record.time_spent + time_spent
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     )
 
     # Calculate the overall grade and percentage based on all results linked to this progress record
