@@ -3,7 +3,6 @@ from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-<<<<<<< HEAD
 from app.models.content import Content
 from app.models.enum import QuestionType
 from app.models.exam import MCQ, Answer, CaseStudy, CodingProblem, EssayQuestion, Exam, ExamAttempt, FillInTheBlank, Question, ShortQuestion, TrueFalseQuestion
@@ -18,14 +17,6 @@ from app.utils.auth import get_current_user
 from app.utils.db import get_session
 from app.utils.generate_sqs import generate_short_questions
 from app.utils.generate_tfqs import generate_true_false_questions
-=======
-from app.models.enum import QuestionType
-from app.models.exam import Answer, Exam, ExamAttempt, Question
-from app.schemas.exam import ExamCreate, ExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
-from app.models.user import StudentProfile, User
-from app.utils.auth import get_current_user
-from app.utils.db import get_session
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
 
 exam_router = APIRouter(prefix="/exams")
 
@@ -39,7 +30,6 @@ async def create_exam(
     student_profile = session.exec(select(StudentProfile).where(StudentProfile.id == current_user.id)).first()
     
     if student_profile:
-<<<<<<< HEAD
          # Fetch the selected contents based on selected_content_ids
         selected_contents = session.exec(
             select(Content).where(Content.id.in_(exam_data.selected_content_ids))
@@ -265,20 +255,6 @@ async def create_exam(
 
 
 
-=======
-        # User is a student, assign student_id
-        new_exam = Exam(**exam_data.dict(), student_id=student_profile.id)
-    else:
-        # If user is not a student, raise an error or assign teacher_id as needed
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User does not have a student profile")
-
-    session.add(new_exam)
-    session.commit()
-    session.refresh(new_exam)
-    return new_exam
-
-
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
 @exam_router.get("/get_exam/{exam_id}", response_model=ExamResponse)
 async def get_exam(
     exam_id: UUID,
@@ -325,7 +301,6 @@ async def get_exam_questions(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-<<<<<<< HEAD
     questions = session.exec(select(Question).where(Question.exam_id == exam_id)).all()
     if not questions:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No questions found for this exam")
@@ -353,13 +328,6 @@ async def get_exam_questions(
     
     return enriched_questions
 
-=======
-    # Retrieve questions for a specific exam
-    questions = session.exec(select(Question).where(Question.exam_id == exam_id)).all()
-    if not questions:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Questions not found for this exam")
-    return questions
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
 
 
 @exam_router.post("/complete_exam_attempt/{exam_id}/{attempt_id}", response_model=ExamAttemptResponse)
@@ -412,19 +380,12 @@ async def submit_answer(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-<<<<<<< HEAD
     # Retrieve the question to ensure it belongs to the specified exam
-=======
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     question = session.get(Question, question_id)
     if not question or question.exam_id != exam_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found in this exam")
 
-<<<<<<< HEAD
     # Retrieve or create the exam attempt for the student
-=======
-    # Retrieve the exam attempt for this student and exam
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     attempt = session.exec(
         select(ExamAttempt)
         .where(ExamAttempt.exam_id == exam_id)
@@ -437,34 +398,14 @@ async def submit_answer(
             detail="Exam attempt not found. Ensure the exam has been started."
         )
 
-<<<<<<< HEAD
     # Record the user's answer without checking correctness
     answer = Answer(
         attempt_id=attempt.id,  # Associate with the current attempt
         question_id=question_id,
         response=response
-=======
-    # Logic for handling different question types
-    if question.type == QuestionType.MCQ:
-        # Verify response against Choice table for MCQ
-        is_correct = any(choice.text == response and choice.is_correct for choice in question.choices)
-    else:
-        # For non-MCQ, mark `is_correct` as None, to be evaluated later if needed
-        is_correct = None
-
-    # Record answer with the found attempt_id
-    answer = Answer(
-        attempt_id=attempt.id,  # Use the found attempt ID here
-        question_id=question_id,
-        response=response,
-        is_correct=is_correct
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     )
     session.add(answer)
     session.commit()
     session.refresh(answer)
-<<<<<<< HEAD
     
-=======
->>>>>>> b630a287bf5ddd336d87b341e0671ec1b0b45e5c
     return answer

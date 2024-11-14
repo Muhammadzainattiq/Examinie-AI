@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field
 from enum import Enum
 from typing import Optional, List
 import json
-from config import config
+from app.config import config
 from openai import OpenAI
 client = OpenAI(api_key = config.OPENAI_API_KEY)
 
