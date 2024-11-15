@@ -62,6 +62,7 @@ def update_progress(
     last_progress_record = session.exec(
         select(StudentProgress).where(StudentProgress.profile_id == profile.id).order_by(StudentProgress.created_at.desc())
     ).first()
+    print(">>>>", last_progress_record)
     if not last_progress_record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Progress record not found.")
 
@@ -79,7 +80,7 @@ def update_progress(
     )
 
     # Calculate the overall grade and percentage based on all results linked to this progress record
-    results = session.exec(select(Result).where(Result.student_progress_id == last_progress_record.id)).all()
+    results = session.exec(select(Result).where(Result.student_id == current_user.id)).all()
 
     if results:
         total_obtained = sum(result.obtained_marks for result in results)

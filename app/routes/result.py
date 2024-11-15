@@ -131,16 +131,10 @@ async def get_student_results(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    # Get the student's profile
-    student_profile = session.exec(select(StudentProfile).where(StudentProfile.id == current_user.id)).first()
-    if not student_profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
-
     # Get all results associated with the student's profile through StudentProgress
     results = session.exec(
         select(Result)
-        .join(StudentProgress, StudentProgress.id == Result.student_progress_id)
-        .where(StudentProgress.profile_id == student_profile.id)
+        .where(Result.student_id == current_user.id)
     ).all()
 
     return results

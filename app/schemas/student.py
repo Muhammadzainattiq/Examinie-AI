@@ -6,18 +6,18 @@ from typing import Optional, List
 from app.models.enum import (
     CareerPath,
     Country,
+    Gender,
     SocialInteractionStyle,
     DecisionMakingApproach,
     CurrentLevelOfEducation,
     LatestGrade,
     FavoriteSubject,
     MotivationToStudy,
-    ExamQuestionHandling,
 )
 
 class StudentProfileCreate(BaseModel):
     age: Optional[int]
-    gender: Optional[str]
+    gender: Optional[Gender]
     country: Optional[Country]
     social_interaction_style: Optional[SocialInteractionStyle]
     decision_making_approach: Optional[DecisionMakingApproach]
@@ -27,13 +27,13 @@ class StudentProfileCreate(BaseModel):
     interested_career_paths: Optional[CareerPath]
     free_time_activities: Optional[str]
     motivation_to_study: Optional[MotivationToStudy]
-    exam_question_handling: Optional[ExamQuestionHandling]
     short_term_academic_goals: Optional[str]
     long_term_academic_goals: Optional[str]
 
 
 class StudentProfileResponse(StudentProfileCreate):
     id: UUID
+    profile_summary: str
     created_at: datetime
     updated_at: Optional[datetime]
 

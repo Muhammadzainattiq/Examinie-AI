@@ -130,7 +130,7 @@ class Answer(BaseModel, table=True):
 
 class Result(BaseModel, table=True):
     exam_attempt_id: UUID = Field(foreign_key="examattempt.id")  # Foreign key reference
-    student_id: Optional[uuid.UUID] = Field(foreign_key="student.id")  # Link to StudentProgress
+    student_id: Optional[uuid.UUID] = Field(foreign_key="studentprofile.id")  # Link to StudentProgress
     exam_title: Optional[str] = None  # Store exam title for reference
     total_marks: Optional[int] = None
     obtained_marks: int

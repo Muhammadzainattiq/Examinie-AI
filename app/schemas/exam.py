@@ -1,17 +1,20 @@
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
+import uuid
 from pydantic import BaseModel
 from app.models.enum import DifficultyLevel, QuestionType
+from app.models.exam import MCQ, CaseStudy, CodingProblem, EssayQuestion, FillInTheBlank, ShortQuestion, TrueFalseQuestion
 
 class ExamCreate(BaseModel):
+    selected_content_ids: List[uuid.UUID]
     title: str
     questions_type: QuestionType
     difficulty: DifficultyLevel
     num_questions: int
     time_limit: Optional[int] = None
     marks_per_question: int
-    total_marks: Optional[int] = None
+    language: Optional[str] = None
 
 class ExamResponse(BaseModel):
     id: UUID
@@ -19,7 +22,6 @@ class ExamResponse(BaseModel):
     questions_type: QuestionType
     difficulty: DifficultyLevel
     num_questions: int
-    time_limit: Optional[int] = None
     marks_per_question: int
     total_marks: Optional[int] = None
     created_at: datetime
@@ -47,15 +49,21 @@ class ExamAttemptResponse(BaseModel):
         orm_mode = True
 
 class QuestionCreate(BaseModel):
-    content: str
+    statement: str
     type: QuestionType
-    correct_answer: Optional[str] = None
     marks: int
+    mcq: Optional[MCQ] = None
+    short_question: Optional[ShortQuestion] = None
+    true_false: Optional[TrueFalseQuestion] = None
+    essay: Optional[EssayQuestion] = None
+    fill_in_the_blank: Optional[FillInTheBlank] = None
+    case_study: Optional[CaseStudy] = None
+    coding_problem: Optional[CodingProblem] = None
 
 class QuestionResponse(BaseModel):
     id: UUID
     exam_id: UUID
-    content: str
+    statement: str
     type: QuestionType
     correct_answer: Optional[str]
     marks: int

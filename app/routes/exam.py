@@ -295,7 +295,7 @@ async def start_exam_attempt(
     return attempt
 
 
-@exam_router.get("/{exam_id}/questions", response_model=List[QuestionCreate])
+@exam_router.get("/{exam_id}/questions")
 async def get_exam_questions(
     exam_id: UUID,
     session: Session = Depends(get_session),

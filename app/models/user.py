@@ -6,10 +6,10 @@ from sqlmodel import SQLModel, Field, Relationship
 from app.models.enum import (
     CareerPath,
     Country,
+    Gender,
     Role,
     CurrentLevelOfEducation,
     DecisionMakingApproach,
-    ExamQuestionHandling,
     FavoriteSubject,
     LatestGrade,
     MotivationToStudy,
@@ -39,8 +39,10 @@ class User(BaseModel, table=True):
 
 class StudentProfile(SQLModel, table=True):
     id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)  # Foreign key reference
+    name: Optional[str]
+    email: Optional[str]
     age: Optional[int]
-    gender: Optional[str]
+    gender: Optional[Gender]
     country: Optional[Country]
     social_interaction_style: Optional[SocialInteractionStyle]
     decision_making_approach: Optional[DecisionMakingApproach]
@@ -49,14 +51,15 @@ class StudentProfile(SQLModel, table=True):
     favorite_subject: Optional[FavoriteSubject]
     free_time_activities: Optional[str]
     motivation_to_study: Optional[MotivationToStudy]
-    exam_question_handling: Optional[ExamQuestionHandling]
     short_term_academic_goals: Optional[str]
     long_term_academic_goals: Optional[str]
     interested_career_paths: Optional[CareerPath] 
+    profile_summary : Optional[str]
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
 
     # Define relationships
+    exam_results: List["Result"] = Relationship(back_populates="student")
     user: Optional["User"] = Relationship(back_populates="student_profile")  # Ensure this line is present
     created_exams: List["Exam"] = Relationship(back_populates="student_creator")
     progress_records: List["StudentProgress"] = Relationship(back_populates="student_profile")
@@ -76,7 +79,7 @@ class StudentProgress(BaseModel, table=True):
 
     # Relationships
     student_profile: Optional["StudentProfile"] = Relationship(back_populates="progress_records")
-    exam_results: List["Result"] = Relationship(back_populates="student_progress") 
+
 
 
 class TeacherProfile(SQLModel, table=True):

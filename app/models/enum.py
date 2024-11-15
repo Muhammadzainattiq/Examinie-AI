@@ -1,6 +1,11 @@
 from enum import Enum
 
 
+class Gender(str, Enum):
+    MALE = "male"
+    FEMALE = "female"
+    OTHER = "other"
+    
 class Role(str, Enum):
     STUDENT = "student"
     TEACHER = "teacher"
@@ -21,26 +26,22 @@ class MotivationToStudy(str, Enum):
     CURIOSITY = "curiosity"
     PEER_COMPETITION = "peer competition"
 
-class ExamQuestionHandling(str, Enum):
-    SKIP_AND_RETURN = "skip and return"
-    ATTEMPT_IMMEDIATELY = "attempt immediately"
-    PROCESS_OF_ELIMINATION = "process of elimination"
-    EDUCATED_GUESS = "educated guess"
-
 class DifficultyLevel(str, Enum):
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
 
+from enum import Enum
+
 class QuestionType(str, Enum):
-    MCQ = "MCQs"
-    SHORT_QUESTION = "Short Questions"
-    LONG_QUESTION = "Long Questions/Essay Questions"
-    CODING_PROBLEM = "Coding Problems"
-    CASE_STUDY = "Case Studies"
-    TRUE_FALSE = "True/False"
-    FILL_IN_THE_BLANK = "Fill in the Blanks"
-    YOUTUBE_VIDEO = "Youtube video"
+    MCQ = "MCQ"
+    SHORT = "Short"
+    ESSAY = "Essay"                # Changed from LONG_QUESTION to ESSAY to align with your route's Essay handling
+    CODING_PROBLEM = "CodingProblem"
+    CASE_STUDY = "CaseStudy"
+    TRUE_FALSE = "TrueFalse"
+    FILL_IN_THE_BLANK = "FillInTheBlank"
+
 
 class CurrentLevelOfEducation(Enum):
     KINDERGARTEN = "Kindergarten"

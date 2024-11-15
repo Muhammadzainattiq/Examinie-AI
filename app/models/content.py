@@ -15,7 +15,6 @@ class BaseModel(SQLModel):
     updated_at: Optional[datetime] = None
 class Content(BaseModel, table=True):
     title: str
-    description: Optional[str] = Field(default=None)
     file_type: FileType  # Type of the file (PDF, DOCX, image, video, etc.)
     contents: str
     exam_id: Optional[UUID] = Field(default=None, foreign_key="exam.id")
