@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Any, Dict, Optional, List
 from uuid import UUID
 from datetime import datetime
 import uuid
@@ -28,6 +28,20 @@ class ExamResponse(BaseModel):
     student_id: Optional[UUID] = None
     teacher_id: Optional[UUID] = None
 
+    class Config:
+        orm_mode = True
+class FullExamResponse(BaseModel):
+    id: UUID
+    title: str
+    questions_type: QuestionType
+    difficulty: DifficultyLevel
+    num_questions: int
+    marks_per_question: int
+    total_marks: Optional[int] = None
+    created_at: datetime
+    student_id: Optional[UUID] = None
+    teacher_id: Optional[UUID] = None
+    questions: Optional[List[Dict[str, Any]]]
     class Config:
         orm_mode = True
 

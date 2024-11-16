@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from app.models.content import Content
 from app.models.enum import QuestionType
 from app.models.exam import MCQ, Answer, CaseStudy, CodingProblem, EssayQuestion, Exam, ExamAttempt, FillInTheBlank, Question, ShortQuestion, TrueFalseQuestion
-from app.schemas.exam import ExamCreate, ExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
+from app.schemas.exam import ExamCreate, ExamResponse, FullExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
 from app.models.user import StudentProfile, User
 from app.utils.generate_cpqs import generate_coding_problems
 from app.utils.generate_csqs import generate_case_studies
@@ -295,7 +295,7 @@ async def start_exam_attempt(
     return attempt
 
 
-@exam_router.get("/{exam_id}/questions")
+@exam_router.get("/get_exam_questions/{exam_id}/")
 async def get_exam_questions(
     exam_id: UUID,
     session: Session = Depends(get_session),
@@ -409,3 +409,48 @@ async def submit_answer(
     session.refresh(answer)
     
     return answer
+
+@exam_router.get("/get_full_exam/{exam_id}", response_model=FullExamResponse)
+async def get_exam(
+    exam_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Retrieve a specific exam by ID
+    exam = session.get(Exam, exam_id)
+    if not exam:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found")
+
+    # Retrieve the associated questions
+    questions = session.exec(select(Question).where(Question.exam_id == exam_id)).all()
+    if not questions:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No questions found for this exam"
+        )
+    
+    # Preload associated data for each question type based on `type`
+    enriched_questions = []
+    for question in questions:
+        question_data = question.dict()
+        if question.type == QuestionType.MCQ:
+            question_data["mcq"] = session.exec(select(MCQ).where(MCQ.question_id == question.id)).first()
+        elif question.type == QuestionType.SHORT:
+            question_data["short_question"] = session.exec(select(ShortQuestion).where(ShortQuestion.question_id == question.id)).first()
+        elif question.type == QuestionType.TRUE_FALSE:
+            question_data["true_false"] = session.exec(select(TrueFalseQuestion).where(TrueFalseQuestion.question_id == question.id)).first()
+        elif question.type == QuestionType.ESSAY:
+            question_data["essay"] = session.exec(select(EssayQuestion).where(EssayQuestion.question_id == question.id)).first()
+        elif question.type == QuestionType.FILL_IN_THE_BLANK:
+            question_data["fill_in_the_blank"] = session.exec(select(FillInTheBlank).where(FillInTheBlank.question_id == question.id)).first()
+        elif question.type == QuestionType.CASE_STUDY:
+            question_data["case_study"] = session.exec(select(CaseStudy).where(CaseStudy.question_id == question.id)).first()
+        elif question.type == QuestionType.CODING_PROBLEM:
+            question_data["coding_problem"] = session.exec(select(CodingProblem).where(CodingProblem.question_id == question.id)).first()
+        
+        enriched_questions.append(question_data)
+    
+    # Add enriched questions to the exam object
+    exam_data = exam.dict()
+    exam_data["questions"] = enriched_questions
+
+    return exam_data

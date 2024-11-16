@@ -33,6 +33,8 @@ class StudentProfileCreate(BaseModel):
 
 class StudentProfileResponse(StudentProfileCreate):
     id: UUID
+    name: str
+    email: str
     profile_summary: str
     created_at: datetime
     updated_at: Optional[datetime]
