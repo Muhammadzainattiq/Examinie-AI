@@ -100,7 +100,7 @@ def update_progress(
 
 
 
-@progress_router.get("/progress_history", response_model=List[StudentProgress])
+@progress_router.get("/get_progress_history", response_model=List[StudentProgress])
 def get_progress_history(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -117,6 +117,27 @@ def get_progress_history(
 
     return progress_records
 
+@progress_router.get("/get_latest_progress", response_model=StudentProgressResponse)
+def get_latest_progress(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Fetch the student's profile
+    profile = session.exec(select(StudentProfile).where(StudentProfile.id == current_user.id)).first()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found.")
 
+    # Fetch the latest progress record
+    latest_progress = session.exec(
+        select(StudentProgress)
+        .where(StudentProgress.profile_id == profile.id)
+        .order_by(StudentProgress.created_at.desc())
+    ).first()
 
+    if not latest_progress:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No progress record found for the student."
+        )
 
+    return latest_progress

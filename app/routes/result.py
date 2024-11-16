@@ -139,3 +139,22 @@ async def get_student_results(
 
     return results
 
+@result_router.get("/get_last_exam_result/", response_model=ResultResponse)
+async def get_last_exam_result(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Fetch the most recent result for the current user
+    last_result = session.exec(
+        select(Result)
+        .where(Result.student_id == current_user.id)
+        .order_by(Result.created_at.desc())
+    ).first()
+
+    if not last_result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No exam results found for the student."
+        )
+
+    return last_result

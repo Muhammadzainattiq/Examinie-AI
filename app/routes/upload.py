@@ -1,8 +1,9 @@
 from typing import Optional
 import zipfile
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.models.content import Content
+from app.models.exam import Exam
 from app.models.user import User
 from app.utils.auth import get_current_user
 from app.utils.db import get_session
@@ -245,3 +246,23 @@ async def upload_exam(
     session.refresh(content_entry)
     
     return {"message": "Exam file uploaded and processed successfully", "contents": content_entry}
+
+
+@upload_router.get("/get_contents_by_student_id/")
+async def get_contents_by_student_id(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):    
+    # Query the Content table using relationships
+    query = (
+            select(Content)
+            .join(Exam)
+            .where(Exam.student_id == current_user.student_id)
+        )
+    contents = session.exec(query).all()
+    if not contents:
+        raise HTTPException(
+            status_code=404, detail="No content found for the specified student ID."
+        )
+
+    return {"student_id": current_user.student_id, "contents": contents}
