@@ -353,7 +353,6 @@ async def get_exam_questions(
 async def complete_exam_attempt(
     exam_id: UUID,
     attempt_id: UUID,
-    score: int,  # Calculated score based on responses
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -364,7 +363,6 @@ async def complete_exam_attempt(
 
     # Mark the attempt as completed, add score, and timestamp
     attempt.completed = True
-    attempt.score = score
     attempt.submitted_at = datetime.utcnow()
     session.add(attempt)
     session.commit()

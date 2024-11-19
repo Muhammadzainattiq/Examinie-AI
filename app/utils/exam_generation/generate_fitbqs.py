@@ -17,9 +17,9 @@ class FillInTheBlanks(SQLModel):
   questions: List[FillInTheBlank]
 
 def generate_fill_in_the_blank(no_of_questions: int, difficulty: str, content, profile_data: str) -> List[FillInTheBlank]:
-    system_content = '''You are a fill-in-the-blank questions generator with single correct answers. There must be three '*' in place of blank. And the blank should be in center of the sentence. Like the following:
+    system_content = '''You are a fill-in-the-blank questions generator with single correct answers. There must be three underscores '_' in place of blank. And the blank should be in center of the sentence. Like the following:
     Example: 
-    question: Water boils at *** degrees Celsius.
+    question: Water boils at ___ degrees Celsius.
     You will be given the following things to generate customized and personalized questions:
     -profile_data: This will be the student's personal data which you will use to add personalization in the exams being generated.
     -content: This will be the content which you will use as context to generate the questions from.

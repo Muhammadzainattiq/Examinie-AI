@@ -11,6 +11,7 @@ from app.models.user import StudentProfile, StudentProgress, User
 from app.models.enum import LatestGrade, QuestionType
 from app.utils.exam_grading.grade_cpqs import evaluate_coding_problem
 from app.utils.exam_grading.grade_csqs import evaluate_case_study
+from app.utils.exam_grading.grade_fitb import evaluate_fitb
 from app.utils.exam_grading.grade_lqs import evaluate_essay_question
 from app.utils.exam_grading.grade_sqs import evaluate_short_question
 from app.utils.student_progress import calculate_grade
@@ -271,20 +272,21 @@ def grade_questions(questions, student_answers, session):
         elif question.type == QuestionType.TRUE_FALSE:
             tf_data = session.get(TrueFalseQuestion, question.id)
             student_response = student_answers.get(question.id)
-            if student_response == tf_data.correct_answer:
+            if student_response.lower() == str(tf_data.correct_answer).lower():
                 obtained_marks = question.marks
                 question_feedback = "Correct answer!"
             else:
                 question_feedback = tf_data.explanation
 
         elif question.type == QuestionType.FILL_IN_THE_BLANK:
-            fb_data = session.get(FillInTheBlank, question.id)
-            student_response = student_answers.get(question.id)
-            if student_response == fb_data.correct_answer:
-                obtained_marks = question.marks
-                question_feedback = "Correct answer!"
-            else:
-                question_feedback = fb_data.explanation
+            ai_response = evaluate_fitb(
+                question.statement,
+                student_answers.get(question.id),
+                question_marks = question_marks
+            )
+            obtained_marks = ai_response["marks"]
+            question_feedback = ai_response["feedback"]
+
 
         elif question.type == QuestionType.SHORT:
             ai_response = evaluate_short_question(
@@ -354,42 +356,54 @@ async def generate_and_update_result(
     attempt = session.get(ExamAttempt, exam_attempt_id)
     if not attempt:
         raise HTTPException(status_code=404, detail="Exam attempt not found")
+    
     # Check if the exam attempt is completed
     if not attempt.completed:
         raise HTTPException(
             status_code=400,  # Bad Request
             detail="Result cannot be generated because the exam attempt is not completed."
         )
+
     # Fetch related exam and questions
     exam = session.get(Exam, attempt.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found for the attempt")
 
+    # Get all questions associated with the exam
     questions = session.exec(
         select(Question).where(Question.exam_id == exam.id)
     ).all()
     if not questions:
         raise HTTPException(status_code=404, detail="No questions found for the exam")
 
+    # Fetch answers based on the exam attempt
     answers = session.exec(
         select(Answer).where(Answer.attempt_id == attempt.id)
     ).all()
-
-    # Map answers by question_id
     student_answers = {answer.question_id: answer.response for answer in answers}
 
-    # Handle unattempted questions by assigning "Unattempted" as the answer
-    for question in questions:
-        if question.id not in student_answers:
-            student_answers[question.id] = "Unattempted"
+    # Call grade_questions to grade the exam and return feedback
+    graded_results = grade_questions(questions, student_answers, session)
 
-    # Grade each question
-    graded_questions = grade_questions(questions, student_answers, session)
+    # Construct graded questions with additional details
+    graded_questions = []
+    for graded_result in graded_results:
+        question = session.get(Question, graded_result["question_id"])
+        student_response = student_answers.get(graded_result["question_id"], "Unattempted")
+        graded_questions.append({
+            "question_id": graded_result["question_id"],  # Include question ID
+            "statement": question.statement,  # Include the question statement
+            "response": student_response,  # Include the student's response
+            "question_type": graded_result["question_type"],
+            "total_marks": graded_result["total_marks"],
+            "obtained_marks": graded_result["obtained_marks"],
+            "feedback": graded_result["feedback"]
+        })
 
     # Summarize the overall result
-    total_marks = sum(q["total_marks"] for q in graded_questions)
-    obtained_marks = sum(q["obtained_marks"] for q in graded_questions)
-    summarized_feedback = " | ".join(q["feedback"] for q in graded_questions if q["feedback"])
+    total_marks = sum(q["total_marks"] for q in graded_results)
+    obtained_marks = sum(q["obtained_marks"] for q in graded_results)
+    summarized_feedback = " | ".join(q["feedback"] for q in graded_results if q["feedback"])
 
     # Calculate grade and percentage
     percentage = (obtained_marks / total_marks) * 100 if total_marks > 0 else 0
@@ -409,25 +423,22 @@ async def generate_and_update_result(
     session.commit()
     session.refresh(result)
 
-    # Retrieve student's profile
+    # Retrieve student's profile and progress
     profile = session.exec(select(StudentProfile).where(StudentProfile.id == current_user.id)).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Student profile not found")
 
-    # Retrieve the latest StudentProgress record for the student
     latest_progress = session.exec(
         select(StudentProgress)
         .where(StudentProgress.profile_id == profile.id)
         .order_by(StudentProgress.created_at.desc())
     ).first()
 
-    # Calculate updated progress metrics
     total_exams_taken = (latest_progress.total_exams_taken if latest_progress else 0) + 1
     exams_passed = (latest_progress.exams_passed if latest_progress else 0) + (1 if grade not in [LatestGrade.F, LatestGrade.INCOMPLETE, LatestGrade.FAIL] else 0)
     exams_failed = (latest_progress.exams_failed if latest_progress else 0) + (1 if grade in [LatestGrade.F, LatestGrade.INCOMPLETE, LatestGrade.FAIL] else 0)
     total_points = (latest_progress.total_points if latest_progress else 0) + obtained_marks
 
-    # Create or update StudentProgress record
     progress_record = StudentProgress(
         profile_id=profile.id,
         date_recorded=datetime.utcnow(),
@@ -436,8 +447,8 @@ async def generate_and_update_result(
         exams_passed=exams_passed,
         exams_failed=exams_failed,
         total_points=total_points,
-        overall_grade=None,  # Placeholder for now
-        overall_percentage=0.0  # Placeholder for now
+        overall_grade=None,
+        overall_percentage=0.0
     )
     session.add(progress_record)
     session.commit()
@@ -454,12 +465,10 @@ async def generate_and_update_result(
             progress_record.overall_percentage = overall_percentage
             progress_record.overall_grade = calculate_grade(overall_percentage)
 
-    # Save updated progress
     session.add(progress_record)
     session.commit()
     session.refresh(progress_record)
 
-    # Prepare response payload
     response_payload = {
         "overall_result": {
             "result_id": result.id,
@@ -469,7 +478,7 @@ async def generate_and_update_result(
             "grade": result.grade,
             "percentage": result.percentage,
         },
-        "question_results": graded_questions,  # Detailed question-level results
+        "question_results": graded_questions,
         "student_progress": {
             "total_exams_taken": progress_record.total_exams_taken,
             "exams_passed": progress_record.exams_passed,
