@@ -11,6 +11,7 @@ client = OpenAI(api_key = config.OPENAI_API_KEY)
 class TrueFalseQuestion(SQLModel):
     question: str = Field(..., description="The true/false question text")
     correct_answer: bool = Field(..., description="True or False")
+    explanation: str = Field(..., description="The explanation of the answer in detail.")
 
 class TrueFalseQuestions(SQLModel):
   questions: List[TrueFalseQuestion]
@@ -25,6 +26,7 @@ def generate_true_false_questions(no_of_questions: int, difficulty: str, content
     In output you should return:
     -question: The true/false question text
     -correct_answer: A boolean True or False
+    -explanation: The explanation of the answer in detail that why this should be the answer
     
     Note: Make sure you generate diverse questions.'''
     user_content = f"profile_data: \"{profile_data}\", content: \"{content}\", number of questions = \"{no_of_questions}\", difficulty = \"{difficulty}\""

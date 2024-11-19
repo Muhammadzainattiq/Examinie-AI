@@ -2,6 +2,8 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
 from datetime import datetime
+
+from sqlmodel import SQLModel
 from app.models.enum import LatestGrade
 
 # ResultCreate schema without grade and percentage fields
@@ -9,7 +11,7 @@ class ResultCreate(BaseModel):
     exam_title: Optional[str] = None  # New field for storing exam title
     total_marks: Optional[int] = None
     obtained_marks: int
-    feedback: Optional[str] = None
+
 
 
 class ResultResponse(BaseModel):
@@ -21,7 +23,6 @@ class ResultResponse(BaseModel):
     obtained_marks: int
     grade: Optional[str]
     percentage: Optional[float]
-    feedback: Optional[str]
     created_at: datetime
 
     class Config:
@@ -41,3 +42,8 @@ class StudentProgressResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class QuestionResult(SQLModel):
+    marks: int
+    feedback: str

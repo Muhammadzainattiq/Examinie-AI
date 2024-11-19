@@ -11,6 +11,7 @@ client = OpenAI(api_key = config.OPENAI_API_KEY)
 class FillInTheBlank(SQLModel):
     question: str = Field(..., description="The sentence with a blank space")
     correct_answer: str = Field(..., description="The word or phrase that fills in the blank")
+    explanation: str = Field(..., description="The explanation of the answer in detail.")
 
 class FillInTheBlanks(SQLModel):
   questions: List[FillInTheBlank]
@@ -28,6 +29,7 @@ def generate_fill_in_the_blank(no_of_questions: int, difficulty: str, content, p
     In output you should return:
     -question: The true/false question text
     -correct_answer:The word or phrase that fills in the blank
+    -explanation: The explanation of the answer in detail that why this should be the answer
     
     Note: Make sure you generate diverse questions.'''
     user_content = f"profile_data: \"{profile_data}\", content: \"{content}\", number of questions = \"{no_of_questions}\", difficulty = \"{difficulty}\""
