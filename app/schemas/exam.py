@@ -94,3 +94,18 @@ class AnswerResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+from pydantic import BaseModel
+from typing import List
+from uuid import UUID
+
+class AnswerSubmit(BaseModel):
+    question_id: UUID
+    response: str
+
+class BulkAnswerSubmit(BaseModel):
+    answers: List[AnswerSubmit]
+
+    class Config:
+        orm_mode = True

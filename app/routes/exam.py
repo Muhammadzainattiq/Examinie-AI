@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from app.models.content import Content
 from app.models.enum import QuestionType
 from app.models.exam import MCQ, Answer, CaseStudy, CodingProblem, EssayQuestion, Exam, ExamAttempt, FillInTheBlank, Question, ShortQuestion, TrueFalseQuestion
-from app.schemas.exam import ExamCreate, ExamResponse, FullExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
+from app.schemas.exam import BulkAnswerSubmit, ExamCreate, ExamResponse, FullExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
 from app.models.user import StudentProfile, User
 from app.utils.exam_generation.generate_cpqs import generate_coding_problems
 from app.utils.exam_generation.generate_csqs import generate_case_studies
@@ -508,3 +508,81 @@ async def get_exam(
     exam_data["questions"] = enriched_questions
 
     return exam_data
+
+
+@exam_router.post("/submit_all_answers/{exam_id}/")
+async def submit_all_answers(
+    exam_id: UUID,
+    bulk_answers: BulkAnswerSubmit,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Retrieve or create the exam attempt for the student
+    attempt = session.exec(
+        select(ExamAttempt)
+        .where(ExamAttempt.exam_id == exam_id)
+        .where(ExamAttempt.student_id == current_user.id)
+    ).first()
+
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exam attempt not found. Ensure the exam has been started."
+        )
+    
+    # Check if the exam attempt is already completed
+    if attempt.completed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This exam attempt has already been completed."
+        )
+    
+    # Process each answer
+    submitted_answers = []
+    # try:
+    for answer_data in bulk_answers.answers:
+        # Ensure the question exists and belongs to the specified exam
+        question = session.get(Question, answer_data.question_id)
+        if not question or question.exam_id != exam_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Question with ID {answer_data.question_id} not found in this exam."
+            )
+        
+        # Prevent duplicate answers for the same question
+        existing_answer = session.exec(
+            select(Answer)
+            .where(Answer.attempt_id == attempt.id)
+            .where(Answer.question_id == answer_data.question_id)
+        ).first()
+
+        if existing_answer:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Answer for question {answer_data.question_id} has already been submitted."
+            )
+
+        # Record the user's answer
+        new_answer = Answer(
+            attempt_id=attempt.id,
+            question_id=answer_data.question_id,
+            response=answer_data.response
+        )
+        session.add(new_answer)
+        submitted_answers.append({
+            "question_id": answer_data.question_id,
+            "response": answer_data.response
+        })
+
+    session.commit()
+    # except Exception as e:
+    #     session.rollback()
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail="Failed to submit answers."
+        # )
+
+    return {
+        "message": "All answers submitted successfully.",
+        "submitted_answers": submitted_answers
+    }

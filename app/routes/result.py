@@ -354,7 +354,12 @@ async def generate_and_update_result(
     attempt = session.get(ExamAttempt, exam_attempt_id)
     if not attempt:
         raise HTTPException(status_code=404, detail="Exam attempt not found")
-
+    # Check if the exam attempt is completed
+    if not attempt.completed:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail="Result cannot be generated because the exam attempt is not completed."
+        )
     # Fetch related exam and questions
     exam = session.get(Exam, attempt.exam_id)
     if not exam:
