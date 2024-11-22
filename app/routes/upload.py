@@ -253,16 +253,19 @@ async def get_contents_by_student_id(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):    
-    # Query the Content table using relationships
+    # Query Content table with both conditions
     query = (
-            select(Content)
-            .join(Exam)
-            .where(Exam.student_id == current_user.student_id)
+        select(Content)
+        .outerjoin(Exam, Content.exam_id == Exam.id)  # Use LEFT JOIN to include unlinked content
+        .where(
+            (Exam.student_id == current_user.id) | (Content.exam_id == None)  # Include both conditions
         )
+    )
     contents = session.exec(query).all()
+    
     if not contents:
         raise HTTPException(
             status_code=404, detail="No content found for the specified student ID."
         )
 
-    return {"student_id": current_user.student_id, "contents": contents}
+    return {"student_id": current_user.id, "contents": contents}

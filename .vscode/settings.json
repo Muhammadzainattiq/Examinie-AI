@@ -1,0 +1,14 @@
+{
+    "containerApps.deploymentConfigurations": [
+        {
+            "label": "examinieai",
+            "type": "AcrDockerBuildRequest",
+            "dockerfilePath": "Dockerfile.dev",
+            "srcPath": ".",
+            "envPath": ".env",
+            "resourceGroup": "examinieaienv",
+            "containerApp": "examinieai",
+            "containerRegistry": "examinieaienv41354d"
+        }
+    ]
+}
