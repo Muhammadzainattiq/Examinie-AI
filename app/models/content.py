@@ -18,4 +18,6 @@ class Content(BaseModel, table=True):
     file_type: FileType  # Type of the file (PDF, DOCX, image, video, etc.)
     contents: str
     exam_id: Optional[UUID] = Field(default=None, foreign_key="exam.id")
+    user_id: UUID = Field(foreign_key="user.id")  # Add this field
+    
     exam: Optional["Exam"] = Relationship(back_populates="contents")

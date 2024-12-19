@@ -2,7 +2,7 @@ import json
 from sqlmodel import SQLModel
 
 from app.schemas.result import QuestionResult
-from app.utils.exam_grading import client
+from app.utils.exam_grading.client import client
 
 def evaluate_short_question(question: str, answer: str, question_marks: int) -> QuestionResult:
     system_content = f'''You are an expert examiner tasked with evaluating and grading student responses to short exam questions in a fair and accurate manner. You will receive the following information for each question:
