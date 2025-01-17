@@ -3,17 +3,18 @@ from uuid import UUID
 from datetime import datetime
 import uuid
 from pydantic import BaseModel
+from sqlmodel import Field
 from app.models.enum import DifficultyLevel, QuestionType
 from app.models.exam import MCQ, CaseStudy, CodingProblem, EssayQuestion, FillInTheBlank, ShortQuestion, TrueFalseQuestion
 
 class ExamCreate(BaseModel):
     selected_content_ids: List[uuid.UUID]
-    title: str
+    title: Optional[str] = Field(default_factory=lambda: datetime.now().strftime("Exam on %Y-%m-%d at %H:%M:%S"))
     questions_type: QuestionType
     difficulty: DifficultyLevel
     num_questions: int
-    time_limit: Optional[int] = None
     marks_per_question: int
+    time_limit: Optional[int] = None
     language: Optional[str] = None
 
 class ExamResponse(BaseModel):
@@ -23,24 +24,15 @@ class ExamResponse(BaseModel):
     difficulty: DifficultyLevel
     num_questions: int
     marks_per_question: int
-    total_marks: Optional[int] = None
+    total_marks: int
+    time_limit: Optional[int]
     created_at: datetime
     student_id: Optional[UUID] = None
     teacher_id: Optional[UUID] = None
 
     class Config:
         orm_mode = True
-class FullExamResponse(BaseModel):
-    id: UUID
-    title: str
-    questions_type: QuestionType
-    difficulty: DifficultyLevel
-    num_questions: int
-    marks_per_question: int
-    total_marks: Optional[int] = None
-    created_at: datetime
-    student_id: Optional[UUID] = None
-    teacher_id: Optional[UUID] = None
+class FullExamResponse(ExamResponse):
     questions: Optional[List[Dict[str, Any]]]
     class Config:
         orm_mode = True
@@ -99,6 +91,21 @@ class AnswerResponse(BaseModel):
     response: str
     is_correct: bool
     created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+from pydantic import BaseModel
+from typing import List
+from uuid import UUID
+
+class AnswerSubmit(BaseModel):
+    question_id: UUID
+    response: str
+
+class BulkAnswerSubmit(BaseModel):
+    answers: List[AnswerSubmit]
 
     class Config:
         orm_mode = True

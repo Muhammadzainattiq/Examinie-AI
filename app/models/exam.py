@@ -6,7 +6,7 @@ import uuid
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional, Union
 from app.models.content import Content
-from app.models.enum import DifficultyLevel, QuestionType
+from app.models.enum import DifficultyLevel, LatestGrade, QuestionType
 from app.models.user import StudentProfile, StudentProgress, TeacherProfile
 
 
@@ -44,51 +44,61 @@ class Question(BaseModel, table=True):
 
 # Specialized Question Models
 
-class MCQ(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class MCQ(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
     option1: str
     option2: str
     option3: str
     option4: str
     correct_option: OptionEnum
     explanation: Optional[str]
-
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="mcq")
 
-class ShortQuestion(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class ShortQuestion(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="short_question")
 
-class TrueFalseQuestion(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class TrueFalseQuestion(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
     correct_answer: bool
-
+    explanation: Optional[str]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="true_false")
 
-class EssayQuestion(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class EssayQuestion(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
     guidance: Optional[str]
-
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="essay")
 
-class FillInTheBlank(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class FillInTheBlank(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
     correct_answer: str
-
+    explanation: Optional[str]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="fill_in_the_blank")
 
-class CaseStudy(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class CaseStudy(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
     case_description: str
     expected_response: str
-
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="case_study")
 
-class CodingProblem(BaseModel, table=True):
-    question_id: uuid.UUID = Field(foreign_key="question.id")
+class CodingProblem(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, foreign_key="question.id")
     sample_input: str
     sample_output: str
-
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     question: Optional[Question] = Relationship(back_populates="coding_problem")
 class Exam(BaseModel, table=True):
     title: str
@@ -97,7 +107,7 @@ class Exam(BaseModel, table=True):
     num_questions: int
     time_limit: Optional[int]
     marks_per_question: int
-    total_marks: Optional[int]
+    total_marks: int
 
     # Foreign keys for student and teacher creators
     student_id: Optional[UUID] = Field(default=None, foreign_key="studentprofile.id")
@@ -128,15 +138,15 @@ class Answer(BaseModel, table=True):
     attempt: Optional["ExamAttempt"] = Relationship(back_populates="answers")
     question: Optional["Question"] = Relationship()
 
+
 class Result(BaseModel, table=True):
     exam_attempt_id: UUID = Field(foreign_key="examattempt.id")  # Foreign key reference
     student_id: Optional[uuid.UUID] = Field(foreign_key="studentprofile.id")  # Link to StudentProgress
     exam_title: Optional[str] = None  # Store exam title for reference
     total_marks: Optional[int] = None
     obtained_marks: int
-    grade: Optional[str] = None
+    grade: Optional[LatestGrade] = None
     percentage: Optional[float] = None
-    feedback: Optional[str] = None
 
     # Relationships
     exam_attempt: Optional["ExamAttempt"] = Relationship()

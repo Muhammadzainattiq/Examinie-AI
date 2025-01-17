@@ -48,13 +48,27 @@ async def upload_free_text(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Content cannot be empty.")
     
-    contents = text
-    content_entry = Content(title=title, file_type=file_type, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    return {"message": "Free text content uploaded successfully", "contents": content_entry}
+    try:
+        contents = text.strip()
+        content_entry = Content(
+            title=title.strip(), 
+            file_type=file_type, 
+            contents=contents, 
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        return {"message": "Free text content uploaded successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
 
 @upload_router.post("/upload_topic/")
 async def tell_a_topic(
@@ -63,19 +77,27 @@ async def tell_a_topic(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    if not topic:
-        raise HTTPException(status_code=400, detail="Topic must be uploaded")
-    content_entry = Content(
-        title=title,
-        file_type="TOPIC",
-        contents=topic
-    )
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    return {"message": "Topic added successfully", "contents": content_entry}
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    if not topic.strip():
+        raise HTTPException(status_code=400, detail="Topic must not be empty.")
+    
+    try:
+        content_entry = Content(
+            title=title.strip(),
+            file_type=FileType.TOPIC,
+            contents=topic.strip(),
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        return {"message": "Topic added successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# PDF Upload Route
+
 @upload_router.post("/upload_pdf/")
 async def upload_pdf(
     title: str = Form(...),
@@ -83,19 +105,32 @@ async def upload_pdf(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_file_extension(file, [".pdf"])
-    file_data = await file.read()
-    contents = get_pdf_text(file_data)
     
-    content_entry = Content(title=title, file_type=FileType.PDF, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "PDF document uploaded and processed successfully", "contents": content_entry}
+    try:
+        file_data = await file.read()
+        contents = get_pdf_text(file_data).strip()
+        if not contents:
+            raise HTTPException(status_code=400, detail="PDF content cannot be empty.")
+        
+        content_entry = Content(
+            title=title.strip(), 
+            file_type=FileType.PDF, 
+            contents=contents, 
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        return {"message": "PDF document uploaded and processed successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# DOCX Upload Route
 @upload_router.post("/upload_docx/")
 async def upload_docx(
     title: str = Form(...),
@@ -103,19 +138,31 @@ async def upload_docx(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_file_extension(file, [".docx"])
-    file_data = await file.read()
-    contents = get_docx_text(file_data)
     
-    content_entry = Content(title=title, file_type=FileType.DOCX, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "DOCX document uploaded and processed successfully", "contents": content_entry}
+    try:
+        file_data = await file.read()
+        contents = get_docx_text(file_data).strip()
+        if not contents:
+            raise HTTPException(status_code=400, detail="DOCX content cannot be empty.")
+        
+        content_entry = Content(
+            title=title.strip(), 
+            file_type=FileType.DOCX, 
+            contents=contents, 
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        return {"message": "DOCX document uploaded and processed successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-
-# XLSX Upload Route
 @upload_router.post("/upload_xlsx/")
 async def upload_xlsx(
     title: str = Form(...),
@@ -123,19 +170,33 @@ async def upload_xlsx(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_file_extension(file, [".xlsx"])
-    file_data = await file.read()
-    contents = get_xlsx_text(file_data)
     
-    content_entry = Content(title=title, file_type=FileType.XLSX, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "XLSX document uploaded and processed successfully", "contents": content_entry}
+    try:
+        file_data = await file.read()
+        contents = get_xlsx_text(file_data).strip()
+        if not contents:
+            raise HTTPException(status_code=400, detail="XLSX content cannot be empty.")
+        
+        content_entry = Content(
+            title=title.strip(), 
+            file_type=FileType.XLSX, 
+            contents=contents, 
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        
+        return {"message": "XLSX document uploaded and processed successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# PPTX Upload Route
 @upload_router.post("/upload_pptx/")
 async def upload_pptx(
     title: str = Form(...),
@@ -143,22 +204,37 @@ async def upload_pptx(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_file_extension(file, [".pptx"])
-    file_data = await file.read()
+    
     try:
-        contents = get_pptx_text(file_data)
-    except zipfile.BadZipFile:
-        raise HTTPException(status_code=400, detail="Uploaded PPTX file is not valid or corrupted.")
-    
-    content_entry = Content(title=title, file_type=FileType.PPTX, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "PPTX document uploaded and processed successfully", "contents": content_entry}
+        file_data = await file.read()
+        try:
+            contents = get_pptx_text(file_data).strip()
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="Uploaded PPTX file is not valid or corrupted.")
+        
+        if not contents:
+            raise HTTPException(status_code=400, detail="PPTX content cannot be empty.")
+        
+        content_entry = Content(
+            title=title.strip(), 
+            file_type=FileType.PPTX, 
+            contents=contents, 
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        
+        return {"message": "PPTX document uploaded and processed successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# Image Upload Route
 @upload_router.post("/upload_image/")
 async def upload_image(
     title: str = Form(...),
@@ -166,19 +242,33 @@ async def upload_image(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_file_extension(file, [".jpg", ".jpeg", ".png", ".bmp"])
-    file_data = await file.read()
-    contents = get_image_text(file_data)
     
-    content_entry = Content(title=title, file_type=FileType.IMAGE, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "Image document uploaded and processed successfully", "contents": content_entry}
+    try:
+        file_data = await file.read()
+        contents = get_image_text(file_data).strip()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Extracted image content is empty.")
+        
+        content_entry = Content(
+            title=title.strip(),
+            file_type=FileType.IMAGE,
+            contents=contents,
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        
+        return {"message": "Image document uploaded and processed successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# YouTube Video Upload Route
 @upload_router.post("/upload_youtube_video/")
 async def upload_youtube_video(
     title: str = Form(...),
@@ -187,18 +277,32 @@ async def upload_youtube_video(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_url(url)
-    contents = extract_yt_transcript(url)
     
-    content_entry = Content(title=title, file_type=file_type, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "YouTube video transcript extracted successfully", "contents": content_entry}
+    try:
+        contents = extract_yt_transcript(url).strip()
+        if not contents:
+            raise HTTPException(status_code=400, detail="YouTube transcript is empty.")
+        
+        content_entry = Content(
+            title=title.strip(),
+            file_type=file_type,
+            contents=contents,
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        
+        return {"message": "YouTube video transcript extracted successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# Web Article Upload Route
 @upload_router.post("/upload_web_article/")
 async def upload_web_article(
     title: str = Form(...),
@@ -207,18 +311,31 @@ async def upload_web_article(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
     validate_url(url)
-    contents = get_web_contents(url)
     
-    content_entry = Content(title=title, file_type=file_type, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "Web article content extracted successfully", "contents": content_entry}
+    try:
+        contents = get_web_contents(url).strip()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Extracted web article content is empty.")
+        
+        content_entry = Content(
+            title=title.strip(),
+            file_type=file_type,
+            contents=contents,
+            user_id=current_user.id
+        )
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        
+        return {"message": "Web article content extracted successfully", "contents": content_entry}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-
-# Exam Upload Route
 @upload_router.post("/upload_exam/")
 async def upload_exam(
     title: str = Form(...),
@@ -227,25 +344,43 @@ async def upload_exam(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    file_data = await file.read()
-    contents = ""
-
-    if file.content_type == 'application/pdf':
-        contents = get_pdf_text(file_data)
-    elif file.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        contents = get_docx_text(file_data)
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file format for exams. Only PDF and DOCX are allowed."
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title cannot be empty.")
+    
+    try:
+        file_data = await file.read()
+        contents = ""
+        
+        if file.content_type == 'application/pdf':
+            contents = get_pdf_text(file_data).strip()
+        elif file.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            contents = get_docx_text(file_data).strip()
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported file format for exams. Only PDF and DOCX are allowed."
+            )
+        
+        if not contents:
+            raise HTTPException(status_code=400, detail="Exam content is empty.")
+        
+        content_entry = Content(
+            title=title.strip(),
+            file_type=file_type,
+            contents=contents,
+            user_id=current_user.id
         )
-    
-    content_entry = Content(title=title, file_type=file_type, contents=contents)
-    session.add(content_entry)
-    session.commit()
-    session.refresh(content_entry)
-    
-    return {"message": "Exam file uploaded and processed successfully", "contents": content_entry}
+        session.add(content_entry)
+        session.commit()
+        session.refresh(content_entry)
+        
+        return {"message": "Exam file uploaded and processed successfully", "contents": content_entry}
+    except HTTPException as http_err:
+        session.rollback()
+        raise http_err
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 @upload_router.get("/get_contents_by_student_id/")
@@ -253,16 +388,25 @@ async def get_contents_by_student_id(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):    
-    # Query the Content table using relationships
-    query = (
+    try:
+        # Query Content table with both conditions
+        query = (
             select(Content)
-            .join(Exam)
-            .where(Exam.student_id == current_user.student_id)
+            .outerjoin(Exam, Content.exam_id == Exam.id)
+            .where(
+                (Exam.student_id == current_user.id) | 
+                (Content.exam_id == None) & (Content.user_id == current_user.id)  # Ensure unlinked content belongs to the current user
+            )
         )
-    contents = session.exec(query).all()
-    if not contents:
-        raise HTTPException(
-            status_code=404, detail="No content found for the specified student ID."
-        )
+        contents = session.exec(query).all()
 
-    return {"student_id": current_user.student_id, "contents": contents}
+        # Check if contents are empty
+        if not contents:
+            raise HTTPException(
+                status_code=404, detail="No content found for the specified student ID."
+            )
+
+        return {"student_id": current_user.id, "contents": contents}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")

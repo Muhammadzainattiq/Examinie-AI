@@ -8,18 +8,16 @@ from openai import OpenAI
 from app.config import config
 client = OpenAI(api_key = config.OPENAI_API_KEY)
 
-class FillInTheBlank(SQLModel):
-    question: str = Field(..., description="The sentence with a blank space")
-    correct_answer: str = Field(..., description="The word or phrase that fills in the blank")
+class TrueFalseQuestion(SQLModel):
+    question: str = Field(..., description="The true/false question text")
+    correct_answer: bool = Field(..., description="True or False")
+    explanation: str = Field(..., description="The explanation of the answer in detail.")
 
-class FillInTheBlanks(SQLModel):
-  questions: List[FillInTheBlank]
+class TrueFalseQuestions(SQLModel):
+  questions: List[TrueFalseQuestion]
 
-def generate_fill_in_the_blank(no_of_questions: int, difficulty: str, content, profile_data: str) -> List[FillInTheBlank]:
-    system_content = '''You are a fill-in-the-blank questions generator with single correct answers. There must be three '*' in place of blank. And the blank should be in center of the sentence. Like the following:
-    Example: 
-    question: Water boils at *** degrees Celsius.
-    You will be given the following things to generate customized and personalized questions:
+def generate_true_false_questions(no_of_questions: int, difficulty: str, content:str, profile_data: str) -> List[TrueFalseQuestion]:
+    system_content = '''You are a true/false questions Generator. You will be given the following things to generate customized and personalized questions:
     -profile_data: This will be the student's personal data which you will use to add personalization in the exams being generated.
     -content: This will be the content which you will use as context to generate the questions from.
     -no_of_questions: how many questions you have to generate.
@@ -27,7 +25,8 @@ def generate_fill_in_the_blank(no_of_questions: int, difficulty: str, content, p
     
     In output you should return:
     -question: The true/false question text
-    -correct_answer:The word or phrase that fills in the blank
+    -correct_answer: A boolean True or False
+    -explanation: The explanation of the answer in detail that why this should be the answer
     
     Note: Make sure you generate diverse questions.'''
     user_content = f"profile_data: \"{profile_data}\", content: \"{content}\", number of questions = \"{no_of_questions}\", difficulty = \"{difficulty}\""
@@ -39,8 +38,8 @@ def generate_fill_in_the_blank(no_of_questions: int, difficulty: str, content, p
             {'role': 'user', 'content': user_content}
         ],
         temperature=0.7,
-        response_format=FillInTheBlanks
+        response_format=TrueFalseQuestions
     )
-    fqs = response.choices[0].message.content
-    fqs_dict = json.loads(fqs)
-    return fqs_dict
+    tfqs = response.choices[0].message.content
+    tfqs_dict = json.loads(tfqs)
+    return tfqs_dict

@@ -35,6 +35,7 @@ class User(BaseModel, table=True):
     # Define relationships
     student_profile: Optional["StudentProfile"] = Relationship(back_populates="user")
     teacher_profile: Optional["TeacherProfile"] = Relationship(back_populates="user")
+    
 
 
 class StudentProfile(SQLModel, table=True):

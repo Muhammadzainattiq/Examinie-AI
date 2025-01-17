@@ -6,17 +6,17 @@ from sqlmodel import Session, select
 from app.models.content import Content
 from app.models.enum import QuestionType
 from app.models.exam import MCQ, Answer, CaseStudy, CodingProblem, EssayQuestion, Exam, ExamAttempt, FillInTheBlank, Question, ShortQuestion, TrueFalseQuestion
-from app.schemas.exam import ExamCreate, ExamResponse, FullExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
+from app.schemas.exam import BulkAnswerSubmit, ExamCreate, ExamResponse, FullExamResponse, QuestionCreate, ExamAttemptCreate, ExamAttemptResponse
 from app.models.user import StudentProfile, User
-from app.utils.generate_cpqs import generate_coding_problems
-from app.utils.generate_csqs import generate_case_studies
-from app.utils.generate_fitbqs import generate_fill_in_the_blank
-from app.utils.generate_lqs import generate_essay_questions
-from app.utils.generate_mcqs import generate_mcqs
+from app.utils.exam_generation.generate_cpqs import generate_coding_problems
+from app.utils.exam_generation.generate_csqs import generate_case_studies
+from app.utils.exam_generation.generate_fitbqs import generate_fill_in_the_blank
+from app.utils.exam_generation.generate_lqs import generate_essay_questions
+from app.utils.exam_generation.generate_mcqs import generate_mcqs
 from app.utils.auth import get_current_user
 from app.utils.db import get_session
-from app.utils.generate_sqs import generate_short_questions
-from app.utils.generate_tfqs import generate_true_false_questions
+from app.utils.exam_generation.generate_sqs import generate_short_questions
+from app.utils.exam_generation.generate_tfqs import generate_true_false_questions
 
 exam_router = APIRouter(prefix="/exams")
 
@@ -82,7 +82,7 @@ async def create_exam(
             
             # Add the specific MCQ details
             mcq_question = MCQ(
-                question_id=main_question.id,
+                id=main_question.id,
                 option1=mcq_data['option1'],
                 option2=mcq_data['option2'],
                 option3=mcq_data['option3'],
@@ -114,7 +114,7 @@ async def create_exam(
             session.refresh(main_question)
 
             short_question = ShortQuestion(
-                question_id=main_question.id
+                id=main_question.id
             )
             session.add(short_question)
 
@@ -138,8 +138,9 @@ async def create_exam(
             session.refresh(main_question)
 
             true_false_question = TrueFalseQuestion(
-                question_id=main_question.id,
-                correct_answer=tf_data['correct_answer']
+                id=main_question.id,
+                correct_answer=tf_data['correct_answer'],
+                explanation = tf_data['explanation']
             )
             session.add(true_false_question)
 
@@ -163,7 +164,7 @@ async def create_exam(
             session.refresh(main_question)
 
             essay_question = EssayQuestion(
-                question_id=main_question.id,
+                id=main_question.id,
                 guidance=essay_data.get('guidance')
             )
             session.add(essay_question)
@@ -188,8 +189,9 @@ async def create_exam(
             session.refresh(main_question)
 
             fill_in_the_blank_question = FillInTheBlank(
-                question_id=main_question.id,
-                correct_answer=fb_data['correct_answer']
+                id=main_question.id,
+                correct_answer=fb_data['correct_answer'],
+                explanation = fb_data['explanation']
             )
             session.add(fill_in_the_blank_question)
 
@@ -213,7 +215,7 @@ async def create_exam(
             session.refresh(main_question)
 
             case_study_question = CaseStudy(
-                question_id=main_question.id,
+                id=main_question.id,
                 expected_response=case_data['expected_response'],
                 case_description=case_data['case_description']
             )
@@ -241,7 +243,7 @@ async def create_exam(
             session.refresh(main_question)
 
             coding_problem_question = CodingProblem(
-                question_id=main_question.id,
+                id=main_question.id,
                 sample_input=coding_data['sample_input'],
                 sample_output=coding_data['sample_output']
             )
@@ -273,6 +275,14 @@ async def start_exam_attempt(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    # Check if the exam with the given exam_id exists
+    exam = session.get(Exam, exam_id)
+    if not exam:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exam not found"
+        )
+
     # Check if an existing attempt exists; otherwise, create a new one
     attempt = session.exec(
         select(ExamAttempt)
@@ -292,7 +302,10 @@ async def start_exam_attempt(
         session.commit()
         session.refresh(attempt)
 
-    return attempt
+    return {
+        "message": "Exam attempt started successfully",
+        "attempt": attempt
+    }
 
 
 @exam_router.get("/get_exam_questions/{exam_id}/")
@@ -301,31 +314,37 @@ async def get_exam_questions(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    # Query all questions for the given exam_id
     questions = session.exec(select(Question).where(Question.exam_id == exam_id)).all()
     if not questions:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No questions found for this exam")
-    
-    # Preload associated data for each question type based on `type`
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No questions found for this exam"
+        )
+
+    # Enrich each question with its specific type data
     enriched_questions = []
     for question in questions:
         question_data = question.dict()
+
+        # Use session.get for faster primary key-based access
         if question.type == QuestionType.MCQ:
-            question_data["mcq"] = session.exec(select(MCQ).where(MCQ.question_id == question.id)).first()
+            question_data["question"] = session.get(MCQ, question.id)
         elif question.type == QuestionType.SHORT:
-            question_data["short_question"] = session.exec(select(ShortQuestion).where(ShortQuestion.question_id == question.id)).first()
+            question_data["question"] = session.get(ShortQuestion, question.id)
         elif question.type == QuestionType.TRUE_FALSE:
-            question_data["true_false"] = session.exec(select(TrueFalseQuestion).where(TrueFalseQuestion.question_id == question.id)).first()
+            question_data["question"] = session.get(TrueFalseQuestion, question.id)
         elif question.type == QuestionType.ESSAY:
-            question_data["essay"] = session.exec(select(EssayQuestion).where(EssayQuestion.question_id == question.id)).first()
+            question_data["question"] = session.get(EssayQuestion, question.id)
         elif question.type == QuestionType.FILL_IN_THE_BLANK:
-            question_data["fill_in_the_blank"] = session.exec(select(FillInTheBlank).where(FillInTheBlank.question_id == question.id)).first()
+            question_data["question"] = session.get(FillInTheBlank, question.id)
         elif question.type == QuestionType.CASE_STUDY:
-            question_data["case_study"] = session.exec(select(CaseStudy).where(CaseStudy.question_id == question.id)).first()
+            question_data["question"] = session.get(CaseStudy, question.id)
         elif question.type == QuestionType.CODING_PROBLEM:
-            question_data["coding_problem"] = session.exec(select(CodingProblem).where(CodingProblem.question_id == question.id)).first()
-        
+            question_data["question"] = session.get(CodingProblem, question.id)
+
         enriched_questions.append(question_data)
-    
+
     return enriched_questions
 
 
@@ -334,7 +353,6 @@ async def get_exam_questions(
 async def complete_exam_attempt(
     exam_id: UUID,
     attempt_id: UUID,
-    score: int,  # Calculated score based on responses
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -345,7 +363,6 @@ async def complete_exam_attempt(
 
     # Mark the attempt as completed, add score, and timestamp
     attempt.completed = True
-    attempt.score = score
     attempt.submitted_at = datetime.utcnow()
     session.add(attempt)
     session.commit()
@@ -397,18 +414,47 @@ async def submit_answer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Exam attempt not found. Ensure the exam has been started."
         )
-
-    # Record the user's answer without checking correctness
-    answer = Answer(
-        attempt_id=attempt.id,  # Associate with the current attempt
-        question_id=question_id,
-        response=response
-    )
-    session.add(answer)
-    session.commit()
-    session.refresh(answer)
     
-    return answer
+    # Prevent duplicate answers for the same question
+    existing_answer = session.exec(
+        select(Answer)
+        .where(Answer.attempt_id == attempt.id)
+        .where(Answer.question_id == question_id)
+    ).first()
+
+    if existing_answer:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Answer for this question has already been submitted"
+        )
+    
+    # Check if the exam attempt is already completed
+    if attempt.completed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This exam attempt has already been completed"
+        )
+
+    # Record the user's answer
+    try:
+        answer = Answer(
+            attempt_id=attempt.id,
+            question_id=question_id,
+            response=response
+        )
+        session.add(answer)
+        session.commit()
+        session.refresh(answer)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to submit answer")
+    
+    return {
+        "message": "Answer submitted successfully",
+        "question_id": question_id,
+        "response": response
+    }
+
 
 @exam_router.get("/get_full_exam/{exam_id}", response_model=FullExamResponse)
 async def get_exam(
@@ -416,41 +462,125 @@ async def get_exam(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    # Retrieve a specific exam by ID
+    # Retrieve the exam by its ID
     exam = session.get(Exam, exam_id)
     if not exam:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exam not found"
+        )
 
-    # Retrieve the associated questions
+    # Retrieve associated questions for the exam
     questions = session.exec(select(Question).where(Question.exam_id == exam_id)).all()
     if not questions:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No questions found for this exam"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No questions found for this exam"
         )
-    
-    # Preload associated data for each question type based on `type`
+
+    # Enrich questions with their specific type data
     enriched_questions = []
     for question in questions:
         question_data = question.dict()
+
+        # Use session.get for efficient primary key-based querying
         if question.type == QuestionType.MCQ:
-            question_data["mcq"] = session.exec(select(MCQ).where(MCQ.question_id == question.id)).first()
+            question_data["question_data"] = session.get(MCQ, question.id)
         elif question.type == QuestionType.SHORT:
-            question_data["short_question"] = session.exec(select(ShortQuestion).where(ShortQuestion.question_id == question.id)).first()
+            question_data["question_data"] = session.get(ShortQuestion, question.id)
         elif question.type == QuestionType.TRUE_FALSE:
-            question_data["true_false"] = session.exec(select(TrueFalseQuestion).where(TrueFalseQuestion.question_id == question.id)).first()
+            question_data["question_data"] = session.get(TrueFalseQuestion, question.id)
         elif question.type == QuestionType.ESSAY:
-            question_data["essay"] = session.exec(select(EssayQuestion).where(EssayQuestion.question_id == question.id)).first()
+            question_data["question_data"] = session.get(EssayQuestion, question.id)
         elif question.type == QuestionType.FILL_IN_THE_BLANK:
-            question_data["fill_in_the_blank"] = session.exec(select(FillInTheBlank).where(FillInTheBlank.question_id == question.id)).first()
+            question_data["question_data"] = session.get(FillInTheBlank, question.id)
         elif question.type == QuestionType.CASE_STUDY:
-            question_data["case_study"] = session.exec(select(CaseStudy).where(CaseStudy.question_id == question.id)).first()
+            question_data["question_data"] = session.get(CaseStudy, question.id)
         elif question.type == QuestionType.CODING_PROBLEM:
-            question_data["coding_problem"] = session.exec(select(CodingProblem).where(CodingProblem.question_id == question.id)).first()
-        
+            question_data["question_data"] = session.get(CodingProblem, question.id)
+
         enriched_questions.append(question_data)
-    
-    # Add enriched questions to the exam object
+
+    # Add enriched questions to the exam data
     exam_data = exam.dict()
     exam_data["questions"] = enriched_questions
 
     return exam_data
+
+
+@exam_router.post("/submit_all_answers/{exam_id}/")
+async def submit_all_answers(
+    exam_id: UUID,
+    bulk_answers: BulkAnswerSubmit,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Retrieve or create the exam attempt for the student
+    attempt = session.exec(
+        select(ExamAttempt)
+        .where(ExamAttempt.exam_id == exam_id)
+        .where(ExamAttempt.student_id == current_user.id)
+    ).first()
+
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exam attempt not found. Ensure the exam has been started."
+        )
+    
+    # Check if the exam attempt is already completed
+    if attempt.completed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This exam attempt has already been completed."
+        )
+    
+    # Process each answer
+    submitted_answers = []
+    # try:
+    for answer_data in bulk_answers.answers:
+        # Ensure the question exists and belongs to the specified exam
+        question = session.get(Question, answer_data.question_id)
+        if not question or question.exam_id != exam_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Question with ID {answer_data.question_id} not found in this exam."
+            )
+        
+        # Prevent duplicate answers for the same question
+        existing_answer = session.exec(
+            select(Answer)
+            .where(Answer.attempt_id == attempt.id)
+            .where(Answer.question_id == answer_data.question_id)
+        ).first()
+
+        if existing_answer:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Answer for question {answer_data.question_id} has already been submitted."
+            )
+
+        # Record the user's answer
+        new_answer = Answer(
+            attempt_id=attempt.id,
+            question_id=answer_data.question_id,
+            response=answer_data.response
+        )
+        session.add(new_answer)
+        submitted_answers.append({
+            "question_id": answer_data.question_id,
+            "response": answer_data.response
+        })
+
+    session.commit()
+    # except Exception as e:
+    #     session.rollback()
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail="Failed to submit answers."
+        # )
+
+    return {
+        "message": "All answers submitted successfully.",
+        "submitted_answers": submitted_answers
+    }
