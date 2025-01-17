@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from app.routes.auth import auth_router
 from app.routes.user import user_router
-from app.routes.onboarding import onboarding_router
 from app.routes.student import student_router
 from app.routes.student_progress import progress_router
 from app.routes.result import result_router
@@ -33,7 +32,6 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(user_router)
-app.include_router(onboarding_router)
 app.include_router(student_router)
 app.include_router(progress_router)
 app.include_router(result_router)
