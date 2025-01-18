@@ -68,7 +68,7 @@ def grade_questions(questions, student_answers, session):
         elif question.type == QuestionType.CASE_STUDY:
             cs_data = session.get(CaseStudy, question.id)
             ai_response = evaluate_case_study(
-                lq_data.case_description,
+                cs_data.case_description,
                 question.statement,
                 student_answers.get(question.id),
                 question_marks = question_marks
