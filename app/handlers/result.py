@@ -9,7 +9,7 @@ from app.utils.db import get_session
 from app.utils.auth import get_current_user
 from app.models.user import StudentProfile, StudentProgress, User
 from app.models.enum import LatestGrade
-from app.utils.exam_grading import grade_questions
+from app.utils.exam_grading.grade_questions import grade_questions
 from app.utils.student_progress import calculate_grade
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select

@@ -78,8 +78,6 @@ async def handle_tell_a_topic(
         session.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-
-@upload_router.post("/upload_pdf/")
 async def handle_upload_pdf(
     title: str ,
     file: UploadFile,

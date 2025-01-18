@@ -1,5 +1,3 @@
-
-
 from app.models.enum import QuestionType
 from app.models.exam import MCQ, CaseStudy, CodingProblem, EssayQuestion, TrueFalseQuestion
 from app.utils.exam_grading.grade_cpqs import evaluate_coding_problem
